@@ -1,1 +1,1 @@
-### ** hadoop learning notes **
+### **hadoop learning notes**
