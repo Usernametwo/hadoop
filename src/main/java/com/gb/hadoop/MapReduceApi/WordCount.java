@@ -17,6 +17,16 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
+/*
+ * file format 
+ * a b cd e cd e
+ * 
+ * output format
+ * a 1
+ * b 1
+ * cd 2
+ * e 2
+ * */
 public class WordCount {
 	//static necessary
 	public static class WCMapper extends Mapper<LongWritable, Text, Text, IntWritable>{
