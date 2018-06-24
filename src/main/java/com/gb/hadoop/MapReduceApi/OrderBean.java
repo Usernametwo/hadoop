@@ -58,14 +58,14 @@ public class OrderBean  implements WritableComparable<OrderBean>{
 		// TODO Auto-generated method stub
 		int ret = this.itemid.compareTo(o.getItemid());
 		if(ret == 0) {
-			ret = -this.amount.compareTo(o.getAmount());
+			ret = this.amount.compareTo(o.getAmount());
 		}
 		return ret;
 	}
 
 	@Override
 	public String toString() {
-		return "OrderBean [itemid=" + itemid + ", amount=" + amount + "]";
+		return this.itemid + "," + this.amount;
 	}
 	
 }
