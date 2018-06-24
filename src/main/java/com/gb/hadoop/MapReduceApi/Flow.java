@@ -22,37 +22,27 @@ import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
  * phoneid|uploadFlow:**|downloadFlow:**|totalFlow:**
  * */
 public class Flow {	
-	public static class FMapper extends Mapper<LongWritable, Text, Text, Text> {
+	public static class FMapper extends Mapper<LongWritable, Text, Text, FlowWritable> {
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-//			String[] strs = value.toString().split("\n");
-//			for(int i = 0 ; i < strs.length-2 ; i ++) {
-//				String[] str = strs[i].split("|");
-//				String phoneid = str[0];
-//				long upload_flow = Long.parseLong(str[1]);
-//				long download_flow = Long.parseLong(str[2]);
-//				long total_flow = upload_flow + download_flow;
-//				context.write(new Text(phoneid), new Text(upload_flow + "|" + download_flow + "|" + total_flow));
-//			}
 			String[] strs = value.toString().split("\\|");
 			String phoneid = strs[0];
 			long upload_flow = Long.parseLong(strs[1]);
 			long download_flow = Long.parseLong(strs[2]);
-			long total_flow = upload_flow + download_flow;
-			context.write(new Text(phoneid), new Text(upload_flow + "|" + download_flow + "|" + total_flow));
+//			long total_flow = upload_flow + download_flow;
+			FlowWritable fw = new FlowWritable(upload_flow, download_flow);
+			context.write(new Text(phoneid), fw);
 		}
 	}
 	
-	public static class Freduce extends Reducer<Text, Text, Text, Text> {
-		public void reduce(Text key, Iterable<Text> value, Context context) throws IOException, InterruptedException {
-			String[] str = null;
+	public static class Freduce extends Reducer<Text, FlowWritable, Text, Text> {
+		public void reduce(Text key, Iterable<FlowWritable> value, Context context) throws IOException, InterruptedException {
 			long upload_flow = 0;
 			long download_flow = 0;
 			long total_flow = 0;
-			for(Text val:value) {
-				str = val.toString().split("\\|");
-				upload_flow = upload_flow + Long.parseLong(str[0]);
-				download_flow = download_flow + Long.parseLong(str[1]);
-				total_flow = total_flow + Long.parseLong(str[2]);
+			for(FlowWritable val:value) {
+				upload_flow = upload_flow + val.getUpFlow();
+				download_flow = download_flow + val.getDownFlow();
+				total_flow = total_flow + val.getTotalFlow();
 			}
 			context.write(key, new Text("uploadFlow:" + upload_flow + "downloadFlow:" + download_flow + "totalFlow:" + total_flow));
 		}
@@ -79,17 +69,26 @@ public class Flow {
 		job.setJobName("flow");
 		job.setJarByClass(Flow.class);
 		
+		//set input and output 
 		FileInputFormat.setInputPaths(job, inputpath);
 		FileOutputFormat.setOutputPath(job, outputpath);
-		
+
+		//set data format
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(Text.class);
+		job.setMapOutputValueClass(FlowWritable.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(Text.class);
 		
+		//set mapper and reducer class
 		job.setMapperClass(FMapper.class);
 		job.setReducerClass(Freduce.class);
-//		job.setCombinerClass(WCReduce.class);
+		
+		//set task partition
+		job.setNumReduceTasks(3);
+		job.setPartitionerClass(FlowPartitioner.class);
+		
+		//job.setCombinerClass(WCReduce.class);
+		//set output foramt
 		job.setOutputFormatClass(SequenceFileOutputFormat.class);
 		
 		job.waitForCompletion(true);
